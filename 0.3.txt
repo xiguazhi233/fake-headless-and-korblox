@@ -1,0 +1,336 @@
+getgenv().RemoveHead = true
+getgenv().RemoveAccessories = true
+getgenv().FakeLeg = true
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local playerGui = player:WaitForChild("PlayerGui")
+local StarterGui = game:GetService("StarterGui")
+
+local LEG_MESH_ID = "101851696"
+local LEG_TEX_ID = "101851254"
+
+local headState = true
+local accState = true
+local legState = true
+
+local mainFrame = nil
+local menuButton = nil
+local uiVisible = true
+
+local function notify(title, text, duration)
+    duration = duration or 3
+    StarterGui:SetCore("SendNotification", {
+        Title = title,
+        Text = text,
+        Duration = duration,
+    })
+end
+
+local function hideHead(character)
+    if not character then return end
+    local head = character:FindFirstChild("Head")
+    if head then
+        head.Transparency = 1
+        for _, child in ipairs(head:GetChildren()) do
+            if child:IsA("ParticleEmitter") then
+                child.Enabled = false
+            elseif child:IsA("Decal") then
+                child.Transparency = 1
+            end
+        end
+    end
+    local face = character:FindFirstChild("Face")
+    if face then face.Transparency = 1 end
+end
+
+local function showHead(character)
+    if not character then return end
+    local head = character:FindFirstChild("Head")
+    if head then
+        head.Transparency = 0
+        for _, child in ipairs(head:GetChildren()) do
+            if child:IsA("ParticleEmitter") then
+                child.Enabled = true
+            elseif child:IsA("Decal") then
+                child.Transparency = 0
+            end
+        end
+    end
+    local face = character:FindFirstChild("Face")
+    if face then face.Transparency = 0 end
+end
+
+local function hideAccessories(character)
+    if not character then return end
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("Accessory") or obj:IsA("Hat") or obj:IsA("Tool") then
+            local handle = obj:FindFirstChild("Handle")
+            if handle and handle:IsA("BasePart") then
+                handle.Transparency = 1
+            end
+        end
+    end
+end
+
+local function showAccessories(character)
+    if not character then return end
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("Accessory") or obj:IsA("Hat") or obj:IsA("Tool") then
+            local handle = obj:FindFirstChild("Handle")
+            if handle and handle:IsA("BasePart") then
+                handle.Transparency = 0
+            end
+        end
+    end
+end
+
+local function applyLegEffect(character)
+    if not character then return end
+    local leg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightLowerLeg")
+    if not leg then return end
+
+    for _, child in ipairs(character:GetChildren()) do
+        if child.Name == "__FakeLegPart" then child:Destroy() end
+    end
+
+    local fakeLeg = Instance.new("Part")
+    fakeLeg.Name = "__FakeLegPart"
+    fakeLeg.Size = leg.Size
+    fakeLeg.CFrame = leg.CFrame
+    fakeLeg.Anchored = false
+    fakeLeg.CanCollide = false
+    fakeLeg.Transparency = 0
+    fakeLeg.BrickColor = BrickColor.new("Really black")
+    fakeLeg.Material = Enum.Material.Plastic
+
+    local mesh = Instance.new("SpecialMesh")
+    mesh.MeshType = Enum.MeshType.FileMesh
+    mesh.MeshId = "rbxassetid://" .. LEG_MESH_ID
+    mesh.TextureId = "rbxassetid://" .. LEG_TEX_ID
+    mesh.Scale = Vector3.new(1, 1, 1)
+    mesh.Parent = fakeLeg
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = leg
+    weld.Part1 = fakeLeg
+    weld.Parent = fakeLeg
+
+    fakeLeg.Parent = character
+    leg.Transparency = 1
+end
+
+local function removeLegEffect(character)
+    for _, child in ipairs(character:GetChildren()) do
+        if child.Name == "__FakeLegPart" then child:Destroy() end
+    end
+    local leg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightLowerLeg")
+    if leg then leg.Transparency = 0 end
+end
+
+local function applyAllStates(character)
+    if not character then return end
+    if headState then hideHead(character) else showHead(character) end
+    if accState then hideAccessories(character) else showAccessories(character) end
+    if legState then applyLegEffect(character) else removeLegEffect(character) end
+end
+
+local function updateButtonStates()
+    if not mainFrame then return end
+    local btns = mainFrame:FindFirstChild("Buttons")
+    if btns then
+        local headBtn = btns:FindFirstChild("HeadBtn")
+        local accBtn = btns:FindFirstChild("AccBtn")
+        local legBtn = btns:FindFirstChild("LegBtn")
+        if headBtn then headBtn.Text = (headState and "✓头" or "头") end
+        if accBtn then accBtn.Text = (accState and "✓饰" or "饰") end
+        if legBtn then legBtn.Text = (legState and "✓腿" or "腿") end
+    end
+end
+
+local function toggleHead()
+    headState = not headState
+    updateButtonStates()
+    if player.Character then applyAllStates(player.Character) end
+end
+
+local function toggleAcc()
+    accState = not accState
+    updateButtonStates()
+    if player.Character then applyAllStates(player.Character) end
+end
+
+local function toggleLeg()
+    legState = not legState
+    updateButtonStates()
+    if player.Character then applyAllStates(player.Character) end
+end
+
+local function toggleAllFeatures()
+    headState = not headState
+    accState = not accState
+    legState = not legState
+    updateButtonStates()
+    if player.Character then applyAllStates(player.Character) end
+end
+
+local function setUIVisible(visible)
+    uiVisible = visible
+    if mainFrame then mainFrame.Visible = visible end
+    if menuButton then menuButton.Visible = true end
+end
+
+local function toggleUI()
+    setUIVisible(not uiVisible)
+end
+
+local function createUI()
+    local oldGui = playerGui:FindFirstChild("MiniControlPanel")
+    if oldGui then oldGui:Destroy() end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "MiniControlPanel"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = playerGui
+    
+    mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 80, 0, 120)
+    mainFrame.Position = UDim2.new(1, -140, 0, 80)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.BackgroundTransparency = 0.1
+    mainFrame.BorderSizePixel = 0
+    mainFrame.ClipsDescendants = true
+    mainFrame.Visible = true
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 22)
+    titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    titleBar.BackgroundTransparency = 0.2
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(1, 0, 1, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "⚙️"
+    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextSize = 13
+    titleText.Parent = titleBar
+    
+    local buttonsContainer = Instance.new("Frame")
+    buttonsContainer.Name = "Buttons"
+    buttonsContainer.Size = UDim2.new(1, -10, 1, -32)
+    buttonsContainer.Position = UDim2.new(0, 5, 0, 26)
+    buttonsContainer.BackgroundTransparency = 1
+    buttonsContainer.Parent = mainFrame
+    
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 4)
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    listLayout.Parent = buttonsContainer
+    
+    local function makeTinyButton(text, callback, color)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 20)
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamSemibold
+        btn.TextSize = 10
+        btn.BackgroundColor3 = color or Color3.fromRGB(60, 60, 80)
+        btn.BackgroundTransparency = 0.2
+        btn.BorderSizePixel = 0
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 5)
+        btnCorner.Parent = btn
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+    
+    local headBtn = makeTinyButton("头", toggleHead, Color3.fromRGB(70, 90, 110))
+    headBtn.Name = "HeadBtn"
+    local accBtn = makeTinyButton("饰", toggleAcc, Color3.fromRGB(70, 90, 110))
+    accBtn.Name = "AccBtn"
+    local legBtn = makeTinyButton("腿", toggleLeg, Color3.fromRGB(70, 90, 110))
+    legBtn.Name = "LegBtn"
+    local allBtn = makeTinyButton("全切", toggleAllFeatures, Color3.fromRGB(90, 70, 110))
+    
+    headBtn.Parent = buttonsContainer
+    accBtn.Parent = buttonsContainer
+    legBtn.Parent = buttonsContainer
+    allBtn.Parent = buttonsContainer
+    
+    menuButton = Instance.new("ImageButton")
+    menuButton.Size = UDim2.new(0, 35, 0, 35)
+    menuButton.Position = UDim2.new(1, -45, 0, 15)
+    menuButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    menuButton.BackgroundTransparency = 0.1
+    menuButton.Image = "rbxassetid://6031094838"
+    menuButton.ImageColor3 = Color3.fromRGB(220, 220, 255)
+    menuButton.ScaleType = Enum.ScaleType.Fit
+    local menuCorner = Instance.new("UICorner")
+    menuCorner.CornerRadius = UDim.new(1, 0)
+    menuCorner.Parent = menuButton
+    menuButton.Parent = screenGui
+    menuButton.MouseButton1Click:Connect(toggleUI)
+    
+    local dragging = false
+    local dragStartPos, dragStartMousePos
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStartPos = mainFrame.Position
+            dragStartMousePos = input.Position
+        end
+    end)
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStartMousePos
+            local newPos = UDim2.new(dragStartPos.X.Scale, dragStartPos.X.Offset + delta.X, dragStartPos.Y.Scale, dragStartPos.Y.Offset + delta.Y)
+            mainFrame.Position = newPos
+        end
+    end)
+    
+    updateButtonStates()
+end
+
+local function setupHotkeys()
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.T then
+            toggleUI()
+        elseif input.KeyCode == Enum.KeyCode.R then
+            toggleAllFeatures()
+        end
+    end)
+end
+
+player.CharacterAdded:Connect(function(character)
+    task.wait(0.5)
+    applyAllStates(character)
+end)
+
+if player.Character then
+    applyAllStates(player.Character)
+end
+createUI()
+setupHotkeys()
+
+notify("0.3版本", "T隐藏/显示UI，R一键切换所有功能，作者yuela反馈QQ167961508", 4)
