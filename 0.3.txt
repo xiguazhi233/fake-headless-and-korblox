@@ -314,9 +314,9 @@ end
 local function setupHotkeys()
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
-        if input.KeyCode == Enum.KeyCode.T then
+        if input.KeyCode == Enum.KeyCode.C then
             toggleUI()
-        elseif input.KeyCode == Enum.KeyCode.R then
+        elseif input.KeyCode == Enum.KeyCode.X then
             toggleAllFeatures()
         end
     end)
@@ -333,4 +333,4 @@ end
 createUI()
 setupHotkeys()
 
-notify("0.3版本", "T隐藏/显示UI，R一键切换所有功能，作者yuela反馈QQ167961508", 4)
+notify("0.3版本", "C隐藏/显示UI，X一键切换所有功能，作者yuela反馈QQ167961508", 4)
