@@ -318,4 +318,4 @@ local function setupGUI()
 end
 
 setupGUI()
-notify("fake headless and korblox", "作者yuela，T键开关UI，R键一键开关所有效果。作者QQ167961508，有问题请反馈", 5)
+notify("fake headless and korblox", "作者yuela，T键开关UI，R键一键开关所有效果。Q群1005801189，有问题请反馈", 5)
