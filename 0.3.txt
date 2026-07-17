@@ -333,4 +333,4 @@ end
 createUI()
 setupHotkeys()
 
-notify("0.3版本", "C隐藏/显示UI，X一键切换所有功能，作者yuela反馈QQ167961508", 4)
+notify("0.3版本", "C隐藏/显示UI，X一键切换所有功能，作者X6G1反馈Q群1005801189", 4)
